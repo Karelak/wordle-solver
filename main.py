@@ -2,7 +2,7 @@ import json
 import random
 
 
-def jsontolist(filename: str):
+def jsontolist(filename: str) -> list:
     with open(filename) as f:
         words = json.load(f)
     # convert all words to uppercase
@@ -10,11 +10,12 @@ def jsontolist(filename: str):
     return words
 
 
-def initialguess(words: list):
-    return words[random.randint(0, (len(words) - 1))]
+def initialguess(words: list) -> str:
+    return random.choice(words)
 
 
-def getgreen():
+def getstatus(previousguess: str) -> list:
+    currentpos = 0
     greenletters = {
         0: "",
         1: "",
@@ -22,62 +23,48 @@ def getgreen():
         3: "",
         4: "",
     }
-    currentpos = 0
-    while currentpos < 5:
-        letter = str(
-            input(f"Green Letter at position {currentpos + 1}, or empty if none: ")
-        )
-        if letter == "":
-            currentpos += 1
-        if letter.isalpha() and len(letter) == 1:
-            greenletters[currentpos] = letter.upper()
-            currentpos += 1
-    return greenletters
-
-
-def getyellow(greenletters: dict):
     yellowletters = []
-    currentpos = 0
-    while currentpos < 5:
-        if greenletters[currentpos] != "":
-            currentpos += 1
-        letter = str(
-            input(f"Yellow Letter at position {currentpos + 1}, or empty if none: ")
-        )
-        if letter == "":
-            currentpos += 1
-        if letter.isalpha() and len(letter) == 1:
-            yellowletters.append([letter.upper(), currentpos])
-            currentpos += 1
-    return yellowletters
-
-
-def getgray(greenletters: dict):
     grayletters = []
-    for pos in range(5):
-        if greenletters[pos] == "":
-            letter = str(
-                input(f"Gray Letter at position {pos + 1}, or empty if yellow: ")
+
+    while currentpos < 5:
+        status = int(
+            input(
+                f"What colour is letter {previousguess[currentpos]} of word {previousguess}? \n 1 - Green \n 2 - Yellow \n 3 - Gray \n"
             )
-            if letter.isalpha() and len(letter) == 1:
-                grayletters.append(letter.upper())
-    return grayletters
+        )
+        if status == 1:  # Green
+            greenletters[currentpos] = previousguess[currentpos]
+            currentpos += 1
+        if status == 2:  # Yellow
+            yellowletters.append([previousguess[currentpos], currentpos])
+            currentpos += 1
+        if status == 3:  # Gray
+            grayletters.append(previousguess[currentpos])
+            currentpos += 1
+    return greenletters, yellowletters, grayletters
 
 
-def getvalidwords(
-    greenletters: dict, yellowletters: list, grayletters: list, words: list
-):
+# Structure
+# Greenletter Letter position,letter
+# Yellowletter Letter,Position it doesnt work in
+# Grayletter letter
+
+
+def getguess(
+    greenletters: dict, yellowletters: list, grayletters: list, wordlist: list
+) -> str:
     validwords = []
-    for word in words:
+    for word in wordlist:
         is_valid = True
         for letter in grayletters:
             if letter in word:
                 is_valid = False
                 break
-        for pos, letter in greenletters.items():
-            if letter != "" and word[pos] != letter:
-                is_valid = False
-                break
+        if is_valid:
+            for pos, letter in greenletters.items():
+                if letter != "" and word[pos] != letter:
+                    is_valid = False
+                    break
         if is_valid:
             for letter, bad_pos in yellowletters:
                 if letter not in word or word[bad_pos] == letter:
@@ -85,26 +72,15 @@ def getvalidwords(
                     break
         if is_valid:
             validwords.append(word)
-    return validwords
 
-
-def main(wordfile):
-    wordlist = jsontolist(wordfile)
-    firstguess = initialguess(wordlist)
-    yellowletters = []
-    found = False
-    print(f"Try {firstguess}")
-    while not found:
-        greenletters = getgreen()
-        grayletters = getgray(greenletters)
-        yellowletters.extend(getyellow(greenletters))
-        possiblewords = getvalidwords(
-            greenletters, yellowletters, grayletters, wordlist
-        )
-        print(f"Try {possiblewords[0]}")
-        if len(possiblewords) == 1:
-            found = True
+    return random.choice(validwords)
 
 
 if __name__ == "__main__":
-    main("validwords.json")
+    words = jsontolist("validwords.json")
+    firstguess = initialguess(words)
+    greenletters, yellowletters, grayletters = getstatus(firstguess)
+    while "" in greenletters.values():
+        guess = getguess(greenletters, yellowletters, grayletters, words)
+        greenletters, yellowletters, grayletters = getstatus(guess)
+
