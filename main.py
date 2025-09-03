@@ -72,15 +72,15 @@ def getguess(
                     break
         if is_valid:
             validwords.append(word)
-
     return random.choice(validwords)
 
 
 if __name__ == "__main__":
     words = jsontolist("validwords.json")
-    firstguess = initialguess(words)
+    firstguess = str(input("Initial guess if you already put something in ")).upper()
+    if firstguess == "":
+        firstguess = initialguess(words)
     greenletters, yellowletters, grayletters = getstatus(firstguess)
     while "" in greenletters.values():
         guess = getguess(greenletters, yellowletters, grayletters, words)
         greenletters, yellowletters, grayletters = getstatus(guess)
-
